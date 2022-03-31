@@ -1,4 +1,5 @@
-from flask_restful import Resource
+from xml.etree.ElementPath import find
+from flask_restful import Resource, reqparse
 
 lista_hoteis = [
     {
@@ -27,3 +28,49 @@ lista_hoteis = [
 class Hoteis(Resource):
     def get(self):
         return {"Lista de hoteis": lista_hoteis}
+
+class Hotel(Resource):
+    args = reqparse.RequestParser()
+    args.add_argument('nome')
+    args.add_argument('estrelas')
+    args.add_argument('diaria')
+    args.add_argument('cidade')
+
+    def find_hotel(hotel_id):
+        for hotel in lista_hoteis:
+            if hotel['hotel_id'] == hotel_id:
+                return hotel
+        return None
+
+    def get(self, hotel_id):
+        hotel = Hotel.find_hotel(hotel_id)
+        if hotel:
+            return hotel
+        return {'message': 'Hotel not found.'}, 404
+
+    def post(self, hotel_id):
+
+        dados = Hotel.args.parse_args()
+
+        novo_hotel = { 'hotel_id': hotel_id, **dados }
+
+        lista_hoteis.append(novo_hotel)
+        return novo_hotel, 201
+
+    def put(self, hotel_id):
+
+        dados = Hotel.args.parse_args()
+
+        novo_hotel = { 'hotel_id': hotel_id, **dados }
+
+        hotel = Hotel.find_hotel(hotel_id)
+        if hotel:
+            hotel.update(novo_hotel)
+            return hotel, 200
+        lista_hoteis.append(novo_hotel)
+        return novo_hotel, 201
+
+    def delete(self, hotel_id):
+        global lista_hoteis
+        lista_hoteis = [hotel for hotel in lista_hoteis if hotel['hotel_id'] != hotel_id]
+        return {'message': 'Hotel deleted.'}
